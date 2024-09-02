@@ -1,6 +1,6 @@
 const express = require("express");
 
-const gameUserRoutes = require("./routes/gameUserRoutes");
+const gameUserRoutes = require("./routes/userRoutes");
 const gameRoutes = require("./routes/gameRoutes");
 
 const app = express();
@@ -13,7 +13,7 @@ app.listen(port, () => {
   console.log(`server is listening on port ${port}`);
 });
 
-app.use("/game-users", gameUserRoutes);
+app.use("/users", gameUserRoutes);
 app.use("/games", gameRoutes);
 
 app.use((req, res) => {
