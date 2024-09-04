@@ -1,4 +1,5 @@
 CREATE SCHEMA ludo;
+
     CREATE TABLE ludo.user (
         id BIGSERIAL PRIMARY KEY NOT NULL,
         name VARCHAR(50) NOT NULL,
@@ -41,10 +42,15 @@ CREATE SCHEMA ludo;
 
     CREATE TABLE ludo.coin_state (
         id BIGSERIAL PRIMARY KEY NOT NULL,
-        color VARCHAR(10) NOT NULL,
+        -- color VARCHAR(10) NOT NULL,
+        color SMALLINT NOT NULL,
         player_id BIGINT NOT NULL,
         position SMALLINT NOT NULL,
         
         CONSTRAINT fk_player_id FOREIGN KEY(player_id) REFERENCES ludo.player(id),
-        CONSTRAINT check_color CHECK (color IN ('RED', 'GREEN', 'YELLOW', 'BLUE'))
+        -- CONSTRAINT check_color CHECK (color IN ('RED', 'GREEN', 'YELLOW', 'BLUE'))
+        CONSTRAINT check_color CHECK (color IN (0, 1, 2, 3)),
+        CONSTRAINT check_position CHECK (position >= -1 AND position <= 56)
     );
+
+ALTER DATABASE girman SET search_path TO ludo;
