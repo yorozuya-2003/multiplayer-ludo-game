@@ -78,9 +78,10 @@ const create_game = async (req, res) => {
       ]);
     }
 
-    const gameData = await client.query("SELECT * FROM game WHERE id = $1 LIMIT 16", [
-      gameId,
-    ]);
+    const gameData = await client.query(
+      "SELECT * FROM game WHERE id = $1 LIMIT 16",
+      [gameId]
+    );
 
     await client.query("COMMIT");
     res.status(201).json(gameData.rows[0]);
@@ -123,6 +124,20 @@ const get_game_state = async (req, res) => {
       return;
     }
 
+    // getting player-turn
+    const playerTurn = await client.query(
+      "SELECT player_id FROM player_turn WHERE game_id = $1",
+      [gameId]
+    );
+    if (playerTurn.rowCount === 0) {
+      await client.query("ROLLBACK");
+      const error = "player-id does not exist in the player-turn table for the requested game-id.";
+      console.error(error);
+      res.status(500).json({ error: error });
+      return;
+    }
+    const playerTurnId = playerTurn.rows[0].player_id;
+
     // checking if game has finished
     const finishPlayerCount = await client.query(
       "SELECT COUNT(id) FROM player WHERE game_id = $1 AND status = 'FINISHED' LIMIT 4",
@@ -148,7 +163,11 @@ const get_game_state = async (req, res) => {
         "UPDATE player SET status = 'FINISHED' where game_id = $1 and status <> 'FINISHED'",
         [gameId]
       );
-      res.status(200).json({ board_state: null, game_has_ended: gameHasEnded });
+      res.status(200).json({
+        board_state: null,
+        game_has_ended: gameHasEnded,
+        player_turn_id: null,
+      });
     }
 
     const coinStates = await client.query(
@@ -158,9 +177,11 @@ const get_game_state = async (req, res) => {
     const coinStateData = coinStates.rows;
 
     await client.query("COMMIT");
-    res
-      .status(200)
-      .json({ board_state: coinStateData, game_has_ended: gameHasEnded });
+    res.status(200).json({
+      board_state: coinStateData,
+      game_has_ended: gameHasEnded,
+      player_turn_id: playerTurnId,
+    });
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("Error in getting the game state:", error);
@@ -188,7 +209,7 @@ const roll_dice = async (req, res) => {
       await client.query("ROLLBACK");
       const error = "requested game-id does not exist.";
       console.error(error);
-      res.status(401).json({ error: error });
+      res.status(400).json({ error: error });
       return;
     }
 
@@ -213,7 +234,7 @@ const roll_dice = async (req, res) => {
 
     // get player-id and dice-value from player-turn table directly
     const playerTurn = await client.query(
-      "SELECT player_id, dice FROM player_turn WHERE game_id = $1 LIMIT 1",
+      "SELECT player_id, dice FROM player_turn WHERE game_id = $1",
       [gameId]
     );
 
@@ -222,7 +243,7 @@ const roll_dice = async (req, res) => {
       await client.query("ROLLBACK");
       const error = "Previous player did not move their coin.";
       console.error(error);
-      res.status(401).json({ error: error });
+      res.status(400).json({ error: error });
       return;
     }
 
@@ -235,7 +256,7 @@ const roll_dice = async (req, res) => {
       const error =
         "player-id in player-turn table does not match the player-id in request header.";
       console.error(error);
-      res.status(401).json({ error: error });
+      res.status(400).json({ error: error });
       return;
     }
 
@@ -319,11 +340,21 @@ const move_coin = async (req, res) => {
       "SELECT color, player_id FROM coin_state WHERE id = $1 LIMIT 1",
       [coinId]
     );
+
+    // checking if requested coin-id is valid
+    if (coinData.rowCount === 0) {
+      await client.query("ROLLBACK");
+      const error = "requested coin-id is invalid.";
+      console.error(error);
+      res.status(400).json({ error: error });
+      return;
+    }
+
     const coinColor = coinData.rows[0].color;
     const playerId = parseInt(coinData.rows[0].player_id);
 
     const playerTurn = await client.query(
-      "SELECT dice, player_id from player_turn where game_id = $1 LIMIT 1",
+      "SELECT dice, player_id from player_turn where game_id = $1",
       [gameId]
     );
 
@@ -332,7 +363,7 @@ const move_coin = async (req, res) => {
       await client.query("ROLLBACK");
       const error = "requested game-id does not exist.";
       console.error(error);
-      res.status(401).json({ error: error });
+      res.status(400).json({ error: error });
       return;
     }
 
@@ -343,18 +374,7 @@ const move_coin = async (req, res) => {
       await client.query("ROLLBACK");
       const error = "previous player did not roll the dice.";
       console.error(error);
-      res.status(401).json({ error: error });
-      return;
-    }
-
-    // checking if dice-value in request header matches dice-value in player-turn
-    const reqDiceValue = parseInt(req.headers.dice_value);
-    if (diceValue !== reqDiceValue) {
-      await client.query("ROLLBACK");
-      const error =
-        "dice-value in player-turn table does not match the dice-value in request header.";
-      console.error(error);
-      res.status(401).json({ error: error });
+      res.status(400).json({ error: error });
       return;
     }
 
@@ -364,7 +384,7 @@ const move_coin = async (req, res) => {
       const error =
         "coin-id in request header does not belong to player-id in player-turn table.";
       console.error(error);
-      res.status(401).json({ error: error });
+      res.status(400).json({ error: error });
       return;
     }
 
@@ -391,7 +411,7 @@ const move_coin = async (req, res) => {
       // getting unfinished players (as well as current player in order)
       const unfinishedPlayers = await client.query(
         "SELECT id FROM player WHERE game_id = $1 AND status = 'IN_GAME' ORDER BY id LIMIT 4",
-        [gameId, playerId]
+        [gameId]
       );
       const unfinishedPlayersOrder = unfinishedPlayers.rows.map(
         (row) => row.id
