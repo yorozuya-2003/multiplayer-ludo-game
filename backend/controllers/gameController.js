@@ -8,11 +8,41 @@ const safePositions = new Set([
 ]);
 
 const create_game = async (req, res) => {
-  const userId = req.headers.user_id;
   const client = await pool.connect();
 
   try {
+    const userId = req.headers.user_id;
+
     await client.query("BEGIN");
+
+    // checking if user-id valid or not
+    const checkUser = await client.query(
+      "SELECT id FROM ludo.user WHERE id = $1 LIMIT 1",
+      [userId]
+    );
+    if (checkUser.rowCount === 0) {
+      await client.query("ROLLBACK");
+      const error = "requested user-id does not exist.";
+      console.error(error);
+      res.status(400).json({ error: error });
+      return;
+    }
+
+    // checking if user already a part of an in-progress game
+    const existingGame = await client.query(
+      "SELECT game_id FROM player WHERE user_id = $1 AND status = 'IN_GAME' LIMIT 1",
+      [userId]
+    );
+    if (existingGame.rowCount === 1) {
+      const gameData = await client.query("SELECT * FROM game WHERE id = $1", [
+        existingGame.rows[0].game_id,
+      ]);
+
+      await client.query("COMMIT");
+      res.status(201).json(gameData.rows[0]);
+      return;
+    }
+
     const availableGames = await client.query(
       "SELECT * FROM game WHERE status='WAITING_FOR_PLAYERS' ORDER BY created_on DESC LIMIT 1"
     );
@@ -34,7 +64,7 @@ const create_game = async (req, res) => {
     }
 
     // setting correct data type for game-id
-    const gameId = parseInt(game.id);
+    const gameId = game.id;
 
     const players = await client.query(
       "INSERT INTO player (game_id, user_id, status) VALUES ($1, $2, $3) RETURNING id",
@@ -43,7 +73,7 @@ const create_game = async (req, res) => {
     let playerId = players.rows[0].id;
 
     // setting correct data type for player-id
-    playerId = parseInt(playerId);
+    playerId = playerId;
 
     let countPlayers = await client.query(
       "SELECT COUNT(id) FROM player WHERE game_id = $1",
@@ -78,10 +108,9 @@ const create_game = async (req, res) => {
       ]);
     }
 
-    const gameData = await client.query(
-      "SELECT * FROM game WHERE id = $1 LIMIT 16",
-      [gameId]
-    );
+    const gameData = await client.query("SELECT * FROM game WHERE id = $1", [
+      gameId,
+    ]);
 
     await client.query("COMMIT");
     res.status(201).json(gameData.rows[0]);
@@ -99,7 +128,7 @@ const get_game_state = async (req, res) => {
 
   try {
     await client.query("BEGIN");
-    const gameId = parseInt(req.headers.game_id);
+    const gameId = req.headers.game_id;
 
     // checking if game has not started
     const gameStatus = await client.query(
@@ -112,7 +141,7 @@ const get_game_state = async (req, res) => {
       await client.query("ROLLBACK");
       const error = "requested game-id does not exist.";
       console.error(error);
-      res.status(500).json({ error: error });
+      res.status(400).json({ error: error });
       return;
     }
 
@@ -120,30 +149,16 @@ const get_game_state = async (req, res) => {
       await client.query("ROLLBACK");
       const error = "requested game-id has not started.";
       console.error(error);
-      res.status(500).json({ error: error });
+      res.status(400).json({ error: error });
       return;
     }
-
-    // getting player-turn
-    const playerTurn = await client.query(
-      "SELECT player_id FROM player_turn WHERE game_id = $1",
-      [gameId]
-    );
-    if (playerTurn.rowCount === 0) {
-      await client.query("ROLLBACK");
-      const error = "player-id does not exist in the player-turn table for the requested game-id.";
-      console.error(error);
-      res.status(500).json({ error: error });
-      return;
-    }
-    const playerTurnId = playerTurn.rows[0].player_id;
 
     // checking if game has finished
     const finishPlayerCount = await client.query(
       "SELECT COUNT(id) FROM player WHERE game_id = $1 AND status = 'FINISHED' LIMIT 4",
       [gameId]
     );
-    const gameHasEnded = finishPlayerCount.rows[0].count === 3;
+    const gameHasEnded = parseInt(finishPlayerCount.rows[0].count) >= 3;
 
     // if game has finished
     if (gameHasEnded) {
@@ -154,21 +169,38 @@ const get_game_state = async (req, res) => {
 
       // updating game status
       await client.query(
-        "UPDATE game SET status = 'FINISHED' where game_id = $1",
+        "UPDATE game SET status = 'FINISHED' where id = $1",
         [gameId]
       );
 
       // updating finish-timestamp for the last player
       await client.query(
-        "UPDATE player SET status = 'FINISHED' where game_id = $1 and status <> 'FINISHED'",
-        [gameId]
+        "UPDATE player SET status = 'FINISHED', finished_ts = $1 where game_id = $2 and status <> 'FINISHED'",
+        [Date.now(), gameId]
       );
+      await client.query("COMMIT");
       res.status(200).json({
         board_state: null,
         game_has_ended: gameHasEnded,
         player_turn_id: null,
       });
+      return;
     }
+
+    // getting player-turn
+    const playerTurn = await client.query(
+      "SELECT player_id FROM player_turn WHERE game_id = $1",
+      [gameId]
+    );
+    if (playerTurn.rowCount === 0) {
+      await client.query("ROLLBACK");
+      const error =
+        "player-id does not exist in the player-turn table for the requested game-id.";
+      console.error(error);
+      res.status(400).json({ error: error });
+      return;
+    }
+    const playerTurnId = playerTurn.rows[0].player_id;
 
     const coinStates = await client.query(
       "SELECT coin_state.id, coin_state.color, coin_state.position, coin_state.player_id FROM coin_state JOIN player ON coin_state.player_id = player.id WHERE player.game_id = $1 LIMIT 16",
@@ -217,7 +249,7 @@ const roll_dice = async (req, res) => {
       await client.query("ROLLBACK");
       const error = "requested game-id has not started.";
       console.error(error);
-      res.status(500).json({ error: error });
+      res.status(400).json({ error: error });
       return;
     }
 
@@ -261,7 +293,26 @@ const roll_dice = async (req, res) => {
     }
 
     // generating random number from 1 to 6
-    const diceValue = Math.floor(Math.random() * 6) + 1;
+    // counting count of unfixed (movable) coins
+    const unfixedCoins = await client.query(
+      "SELECT COUNT(id) FROM coin_state WHERE player_id = $1 AND position <> -1 AND position <> 56 LIMIT 4",
+      [playerId]
+    );
+    const countUnfixedCoins = parseInt(unfixedCoins.rows[0].count);
+
+    // const diceValue = Math.floor(Math.random() * 6) + 1;
+    let diceValue;
+    const randomNum = Math.random();
+    if (countUnfixedCoins === 0) {
+      diceValue = randomNum <= 0.25 ? 1 + Math.floor(Math.random() * 5) : 6;
+    } else if (countUnfixedCoins === 1) {
+      diceValue =
+        randomNum <= 0.4
+          ? 1 + Math.floor(Math.random() * 4)
+          : 5 + Math.floor(Math.random() * 2);
+    } else {
+      diceValue = 1 + Math.floor(Math.random() * 6);
+    }
 
     // checking if any moves possible (coin-position + dice-value <= 56)
     const value = 56 - diceValue;
@@ -351,7 +402,7 @@ const move_coin = async (req, res) => {
     }
 
     const coinColor = coinData.rows[0].color;
-    const playerId = parseInt(coinData.rows[0].player_id);
+    const playerId = coinData.rows[0].player_id;
 
     const playerTurn = await client.query(
       "SELECT dice, player_id from player_turn where game_id = $1",
@@ -379,7 +430,7 @@ const move_coin = async (req, res) => {
     }
 
     // checking if requested coin id belongs to player in player-turn
-    if (playerId !== parseInt(playerTurn.rows[0].player_id)) {
+    if (parseInt(playerId) !== parseInt(playerTurn.rows[0].player_id)) {
       await client.query("ROLLBACK");
       const error =
         "coin-id in request header does not belong to player-id in player-turn table.";
@@ -430,19 +481,19 @@ const move_coin = async (req, res) => {
           "SELECT COUNT(id) FROM coin_state where player_id = $1 and position = 56",
           [playerId]
         );
-        countHome = countHome.rows[0].count;
+        countHome = parseInt(countHome.rows[0].count);
         // if all coins reach home
         if (countHome === 4) {
           // update player finish status
           await client.query(
-            "UPDATE player SET status = $1, finished_ts = $2, WHERE id = $3",
-            ["FINISHED", Date.now(), playerId]
+            "UPDATE player SET status = 'FINISHED', finished_ts = $1 WHERE id = $2",
+            [Date.now(), playerId]
           );
 
           // update next player's turn
           if (nextTurnPlayerId !== null) {
             await client.query(
-              "UPDATE player_turn SET player_id = $1, dice = 0 where game_id = $1",
+              "UPDATE player_turn SET player_id = $1, dice = 0 WHERE game_id = $2",
               [nextTurnPlayerId, gameId]
             );
           }
@@ -455,10 +506,19 @@ const move_coin = async (req, res) => {
 
         // coin does not reach home
       } else {
+        if (safePositions.has(coinPosition)) {
+          if (diceValue !== 6) {
+
+          }
+        }
+        else {
+
+        }
+
         const absoluteCoinPosition = (coinPosition + 13 * coinColor) % 52;
         const cut = await client.query(
-          "SELECT * FROM coin_state JOIN player ON coin_state.player_id = player.id WHERE (coin_state.position + 13 * coin_state.color) % 52 = $1 AND coin_state.id != $2",
-          [absoluteCoinPosition, coinId]
+          "SELECT coin_state.id FROM coin_state JOIN player ON coin_state.player_id = player.id WHERE (coin_state.position + 13 * coin_state.color) % 52 = $1 AND coin_state.player_id <> $2 AND player.status = 'IN_GAME'",
+          [absoluteCoinPosition, playerId]
         );
         const hasCut = cut.rowCount !== 0;
         // if new coin position is not among the safe positions
@@ -513,7 +573,7 @@ const get_game_rankings = async (req, res) => {
 
   try {
     await client.query("BEGIN");
-    const gameId = parseInt(req.headers.game_id);
+    const gameId = req.headers.game_id;
 
     // checking if game has finished
     const gameStatus = await client.query(
@@ -526,16 +586,17 @@ const get_game_rankings = async (req, res) => {
       await client.query("ROLLBACK");
       const error = "requested game-id does not exist.";
       console.error(error);
-      res.status(500).json({ error: error });
+      res.status(400).json({ error: error });
       return;
     }
 
     if (gameStatus.rows[0].status === "FINISHED") {
       const rankings = await client.query(
-        "SELECT id FROM player where game_id = $1 ORDER_BY finished_ts LIMIT 4",
+        "SELECT id FROM player where game_id = $1 ORDER BY finished_ts LIMIT 4",
         [gameId]
       );
       res.status(200).json({ rankings: rankings.rows });
+      return;
     }
 
     await client.query("COMMIT");
