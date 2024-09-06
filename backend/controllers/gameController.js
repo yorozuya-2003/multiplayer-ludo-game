@@ -168,10 +168,9 @@ const get_game_state = async (req, res) => {
       ]);
 
       // updating game status
-      await client.query(
-        "UPDATE game SET status = 'FINISHED' where id = $1",
-        [gameId]
-      );
+      await client.query("UPDATE game SET status = 'FINISHED' where id = $1", [
+        gameId,
+      ]);
 
       // updating finish-timestamp for the last player
       await client.query(
@@ -506,15 +505,6 @@ const move_coin = async (req, res) => {
 
         // coin does not reach home
       } else {
-        if (safePositions.has(coinPosition)) {
-          if (diceValue !== 6) {
-
-          }
-        }
-        else {
-
-        }
-
         const absoluteCoinPosition = (coinPosition + 13 * coinColor) % 52;
         const cut = await client.query(
           "SELECT coin_state.id FROM coin_state JOIN player ON coin_state.player_id = player.id WHERE (coin_state.position + 13 * coin_state.color) % 52 = $1 AND coin_state.player_id <> $2 AND player.status = 'IN_GAME'",
@@ -523,11 +513,10 @@ const move_coin = async (req, res) => {
         const hasCut = cut.rowCount !== 0;
         // if new coin position is not among the safe positions
         if (!safePositions.has(coinPosition) && hasCut) {
-          const cutCoinId = cut.rows[0].id;
-          // set the cut coin position to -1
+          // set the cut coin positions to -1
           await client.query(
-            "UPDATE coin_state SET position = -1 WHERE id = $1",
-            [cutCoinId]
+            "UPDATE coin_state c SET position = -1 FROM player p WHERE c.player_id = p.id AND (c.position + 13 * c.color) % 52 = $1 AND c.player_id <> $2 AND p.status = 'IN_GAME'",
+            [absoluteCoinPosition, playerId]
           );
         } else if (diceValue !== 6) {
           // next player's turn update
