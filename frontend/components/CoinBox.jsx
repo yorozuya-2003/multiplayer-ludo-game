@@ -25,6 +25,7 @@ const CoinBox = ({ color, coins, gameId }) => {
                   color={coin.color}
                   position={coin.position}
                   gameId={gameId}
+                  scale={1}
                 />
               ) : (
                 <div
@@ -45,6 +46,7 @@ const CoinBox = ({ color, coins, gameId }) => {
                   color={coin.color}
                   position={coin.position}
                   gameId={gameId}
+                  scale={1}
                 />
               ) : (
                 <div

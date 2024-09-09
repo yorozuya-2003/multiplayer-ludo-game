@@ -4,7 +4,7 @@ import { useContext } from "react";
 import API_URL from "./Config";
 import { BoardStateContext } from "./Contexts";
 
-const Coin = ({ id, color, gameId }) => {
+const Coin = ({ id, color, gameId, scale }) => {
   const [
     absolutePositions,
     setAbsolutePositions,
@@ -13,6 +13,13 @@ const Coin = ({ id, color, gameId }) => {
     diceMap,
     setDiceMap,
   ] = useContext(BoardStateContext);
+
+  const scaleMapping = {
+    1: ["2.5rem", "2rem"],
+    2: ["1.25rem", "1rem"],
+    3: ["1rem", "0.75rem"],
+    4: ["0.75rem", "0.5rem"],
+  };
 
   const handleClickCoin = () => {
     const url = `${API_URL}/games/move-coin`;
@@ -41,11 +48,16 @@ const Coin = ({ id, color, gameId }) => {
   };
   return (
     <div
-      className={`w-10 h-10 bg-white border border-gray-500 rounded-full flex items-center justify-center`}
+      className={`bg-white border border-gray-500 rounded-full flex items-center justify-center`}
+      style={{ width: scaleMapping[scale][0], height: scaleMapping[scale][0] }}
       onClick={handleClickCoin}
     >
       <div
-        className={`w-8 h-8 bg-${coinColorMapping[color]}-500 rounded-full`}
+        className={`bg-${coinColorMapping[color]}-500 rounded-full`}
+        style={{
+          width: scaleMapping[scale][1],
+          height: scaleMapping[scale][1],
+        }}
       ></div>
     </div>
   );
