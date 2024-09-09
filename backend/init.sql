@@ -36,8 +36,10 @@ CREATE SCHEMA ludo;
         id BIGSERIAL PRIMARY KEY NOT NULL,
         game_id BIGINT UNIQUE,
         player_id BIGINT NOT NULL,
+        dice SMALLINT NOT NULL DEFAULT 0,
 
-        CONSTRAINT fk_player_id FOREIGN KEY(player_id) REFERENCES ludo.player(id) ON DELETE CASCADE
+        CONSTRAINT fk_player_id FOREIGN KEY(player_id) REFERENCES ludo.player(id) ON DELETE CASCADE,
+        CONSTRAINT check_dice CHECK (dice in (0, 1, 2, 3, 4, 5, 6))
     );
 
     CREATE TABLE ludo.coin_state (
@@ -54,3 +56,5 @@ CREATE SCHEMA ludo;
     );
 
 ALTER DATABASE girman SET search_path TO ludo;
+
+CREATE INDEX idx_game_status on ludo.game(status);
