@@ -1,7 +1,7 @@
-import Coin from "./Coin";
 import { coinColorMapping } from "@/components/Utils";
+import Coin from "./Coin";
 
-const Cell = ({ position, cellColor, coins }) => {
+const Cell = ({ position, cellColor, coins, gameId }) => {
   if (coins.length === 0) {
     return (
       <div
@@ -38,6 +38,7 @@ const Cell = ({ position, cellColor, coins }) => {
           id={coin.id}
           position={coin.position}
           color={coin.color}
+          gameId={gameId}
         />
       ))}
       {/* {position} */}

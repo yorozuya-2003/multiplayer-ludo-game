@@ -1,7 +1,7 @@
 import { coinColorMapping } from "@/components/Utils";
 import Coin from "./Coin";
 
-const CoinBox = ({ color, coins }) => {
+const CoinBox = ({ color, coins, gameId }) => {
   let coinArray = new Array(4).fill({ id: -1 });
   for (let ctr = 0; ctr < coins.length; ctr++) {
     coinArray[ctr] = coins[ctr];
@@ -24,6 +24,7 @@ const CoinBox = ({ color, coins }) => {
                   id={coin.id}
                   color={coin.color}
                   position={coin.position}
+                  gameId={gameId}
                 />
               ) : (
                 <div
@@ -43,6 +44,7 @@ const CoinBox = ({ color, coins }) => {
                   id={coin.id}
                   color={coin.color}
                   position={coin.position}
+                  gameId={gameId}
                 />
               ) : (
                 <div
