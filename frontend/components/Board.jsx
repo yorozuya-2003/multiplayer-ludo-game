@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import Cell from "./Cell";
 import Centre from "./Centre";
@@ -24,6 +24,18 @@ const Board = ({ gameId }) => {
   const [playerTurnId, setPlayerTurnId] = useState(null);
   const [playerIdMap, setPlayerIdMap] = useState({});
 
+  const [diceMap, setDiceMap] = useState({ 0: 0, 1: 0, 2: 0, 3: 0 });
+
+  const POLLING_INTERVAL = 2000;
+
+  // useEffect(() => {
+  //   const intervalId = setInterval(() => {
+  //     getBoardState();
+  //   }, POLLING_INTERVAL);
+
+  //   return () => clearInterval(intervalId);
+  // }, []);
+
   const getBoardState = () => {
     const gameId = 2;
     const url = `${API_URL}/games/state`;
@@ -39,6 +51,14 @@ const Board = ({ gameId }) => {
         setNegativePositions(negativePositionMapping);
         setPlayerTurnId(response.data.player_turn_id);
         handlePlayerMapping(response.data.board_state);
+
+        const resDiceValue = parseInt(response.data.dice_value);
+        setDiceMap({
+          0: resDiceValue,
+          1: resDiceValue,
+          2: resDiceValue,
+          3: resDiceValue,
+        });
       })
       .catch((error) => {
         console.error(error);
@@ -60,10 +80,8 @@ const Board = ({ gameId }) => {
         setAbsolutePositions,
         negativePositions,
         setNegativePositions,
-        // playerTurnId,
-        // setPlayerTurnId,
-        // playerIdMap,
-        // setPlayerIdMap,
+        diceMap,
+        setDiceMap,
       ]}
     >
       <div className="p-4 flex flex-row gap-20 items-center justify-center">

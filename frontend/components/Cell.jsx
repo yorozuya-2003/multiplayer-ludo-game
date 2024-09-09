@@ -33,13 +33,7 @@ const Cell = ({ position, cellColor, coins, gameId }) => {
       className={`box-border h-12 w-12 p-0 m-0 bg-${coinColorMapping[cellColor]}-500 border border-gray-500 flex items-center justify-center`}
     >
       {coins.map((coin) => (
-        <Coin
-          key={coin.id}
-          id={coin.id}
-          position={coin.position}
-          color={coin.color}
-          gameId={gameId}
-        />
+        <Coin key={coin.id} id={coin.id} color={coin.color} gameId={gameId} />
       ))}
       {/* {position} */}
     </div>

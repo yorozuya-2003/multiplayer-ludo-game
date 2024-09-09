@@ -4,16 +4,14 @@ import { useContext } from "react";
 import API_URL from "./Config";
 import { BoardStateContext } from "./Contexts";
 
-const Coin = ({ id, color, position, gameId }) => {
+const Coin = ({ id, color, gameId }) => {
   const [
     absolutePositions,
     setAbsolutePositions,
     negativePositions,
     setNegativePositions,
-    // playerTurnId,
-    // setPlayerTurnId,
-    // playerIdMap,
-    // setPlayerIdMap,
+    diceMap,
+    setDiceMap,
   ] = useContext(BoardStateContext);
 
   const handleClickCoin = () => {
@@ -35,6 +33,7 @@ const Coin = ({ id, color, position, gameId }) => {
           handlePositionMapping(response.data.board_state);
         setAbsolutePositions(absolutePositionMapping);
         setNegativePositions(negativePositionMapping);
+        setDiceMap({ 0: 0, 1: 0, 2: 0, 3: 0 });
       })
       .catch((error) => {
         console.error(error);

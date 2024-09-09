@@ -1,9 +1,17 @@
 import axios from "axios";
-import { useState } from "react";
+import { useContext } from "react";
 import API_URL from "./Config";
+import { BoardStateContext } from "./Contexts";
 
 const Dice = ({ gameId, playerId, color, visible }) => {
-  const [currentDiceValue, setCurrentDiceValue] = useState(null);
+  const [
+    absolutePositions,
+    setAbsolutePositions,
+    negativePositions,
+    setNegativePositions,
+    diceMap,
+    setDiceMap,
+  ] = useContext(BoardStateContext);
 
   const handleClickDice = () => {
     const url = `${API_URL}/games/roll-dice`;
@@ -16,7 +24,13 @@ const Dice = ({ gameId, playerId, color, visible }) => {
         },
       })
       .then((response) => {
-        setCurrentDiceValue(response.data.dice_value);
+        const resDiceValue = parseInt(response.data.dice_value);
+        setDiceMap({
+          0: resDiceValue,
+          1: resDiceValue,
+          2: resDiceValue,
+          3: resDiceValue,
+        });
       })
       .catch((error) => {
         console.error(error);
@@ -29,15 +43,13 @@ const Dice = ({ gameId, playerId, color, visible }) => {
         onClick={handleClickDice}
       >
         <p className="font-Poppins text-2xl">
-          {currentDiceValue ? currentDiceValue : "ROLL"}
+          {diceMap[color] !== 0 ? diceMap[color] : "ROLL"}
         </p>
       </div>
     );
   else {
     return (
-      <div className="w-20 h-20 bg-white border border-gray-500 rounded-lg flex items-center justify-center invisible select-none">
-        {/* <p className="font-Poppins text-2xl">{currentDiceValue}</p> */}
-      </div>
+      <div className="w-20 h-20 bg-white border border-gray-500 rounded-lg flex items-center justify-center invisible select-none"></div>
     );
   }
 };

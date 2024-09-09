@@ -200,7 +200,7 @@ const get_game_state = async (req, res) => {
       return;
     }
     const playerTurnId = playerTurn.rows[0].player_id;
-    // const diceValue = playerTurn.rows[0].dice;
+    const diceValue = playerTurn.rows[0].dice;
 
     const coinStates = await client.query(
       "SELECT coin_state.id, coin_state.color, coin_state.position, coin_state.player_id FROM coin_state JOIN player ON coin_state.player_id = player.id WHERE player.game_id = $1 LIMIT 16",
@@ -213,7 +213,7 @@ const get_game_state = async (req, res) => {
       board_state: coinStateData,
       game_has_ended: gameHasEnded,
       player_turn_id: playerTurnId,
-      // dice_value: diceValue,
+      dice_value: diceValue,
     });
   } catch (error) {
     await client.query("ROLLBACK");
