@@ -153,6 +153,7 @@ const Board = ({ gameId }) => {
                   key={21}
                   position={21}
                   coins={absolutePositions[21]}
+                  star={true}
                 />
                 <Cell
                   gameId={gameId}
@@ -339,6 +340,7 @@ const Board = ({ gameId }) => {
                   key={8}
                   position={8}
                   coins={absolutePositions[8]}
+                  star={true}
                 />
                 <Cell
                   gameId={gameId}
@@ -390,6 +392,7 @@ const Board = ({ gameId }) => {
                   key={34}
                   position={34}
                   coins={absolutePositions[34]}
+                  star={true}
                 />
                 <Cell
                   gameId={gameId}
@@ -576,6 +579,7 @@ const Board = ({ gameId }) => {
                   key={47}
                   position={47}
                   coins={absolutePositions[47]}
+                  star={true}
                 />
               </div>
               <div className="flex flex-row">

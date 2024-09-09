@@ -1,11 +1,21 @@
 import { coinColorMapping } from "@/components/Utils";
 import Coin from "./Coin";
+import bg from "@/public/star.png";
 
-const Cell = ({ position, cellColor, coins, gameId }) => {
+const Cell = ({ position, cellColor, coins, gameId, star }) => {
   if (coins.length === 0) {
     return (
       <div
         className={`box-border h-12 w-12 p-0 m-0 bg-${coinColorMapping[cellColor]}-500 border border-gray-500 flex items-center justify-center`}
+        style={
+          star
+            ? {
+                backgroundColor: "#D3D3D3",
+                backgroundImage: `url(${bg.src})`,
+                backgroundSize: "contain",
+              }
+            : {}
+        }
       >
         {/* {position} */}
       </div>
@@ -22,6 +32,15 @@ const Cell = ({ position, cellColor, coins, gameId }) => {
   return (
     <div
       className={`box-border h-12 w-12 p-0 m-0 bg-${coinColorMapping[cellColor]}-500 border border-gray-500 flex flex-wrap items-center justify-center`}
+      style={
+        star
+          ? {
+              backgroundColor: "#D3D3D3",
+              backgroundImage: `url(${bg.src})`,
+              backgroundSize: "contain",
+            }
+          : {}
+      }
     >
       {coins.map((coin) => (
         <Coin
