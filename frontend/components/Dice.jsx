@@ -43,7 +43,7 @@ const Dice = ({ gameId, playerId, color, visible }) => {
         className="w-20 h-20 bg-white border border-gray-500 rounded-lg flex items-center justify-center select-none"
         onClick={handleClickDice}
       >
-        <NumberedDice number={diceMap[color]} />
+        <NumberedDice number={diceMap[color]} color={color} />
       </div>
     );
   else {

@@ -28,13 +28,13 @@ const Board = ({ gameId }) => {
 
   const POLLING_INTERVAL = 2000;
 
-  // useEffect(() => {
-  //   const intervalId = setInterval(() => {
-  //     getBoardState();
-  //   }, POLLING_INTERVAL);
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      getBoardState();
+    }, POLLING_INTERVAL);
 
-  //   return () => clearInterval(intervalId);
-  // }, []);
+    return () => clearInterval(intervalId);
+  }, []);
 
   const getBoardState = () => {
     const gameId = 2;
@@ -646,12 +646,12 @@ const Board = ({ gameId }) => {
           />
         </div>
 
-        <button
+        {/* <button
           className="font-Poppins border border-black"
           onClick={getBoardState}
         >
           Load Game State
-        </button>
+        </button> */}
         {/* <p className="font-Poppins">{playerTurnId}</p> */}
       </div>
     </BoardStateContext.Provider>

@@ -308,7 +308,7 @@ const roll_dice = async (req, res) => {
       diceValue = randomNum <= 0.25 ? 1 + Math.floor(Math.random() * 5) : 6;
     } else if (countUnfixedCoins === 1) {
       diceValue =
-        randomNum <= 0.4
+        randomNum <= 0.5
           ? 1 + Math.floor(Math.random() * 4)
           : 5 + Math.floor(Math.random() * 2);
     } else {
@@ -509,7 +509,7 @@ const move_coin = async (req, res) => {
       } else {
         const absoluteCoinPosition = (coinPosition + 13 * coinColor) % 52;
         const cut = await client.query(
-          "SELECT coin_state.id FROM coin_state JOIN player ON coin_state.player_id = player.id WHERE (coin_state.position + 13 * coin_state.color) % 52 = $1 AND coin_state.player_id <> $2 AND player.status = 'IN_GAME'",
+          "SELECT c.id FROM coin_state c JOIN player p ON c.player_id = p.id WHERE c.position <> -1 AND c.position <= 50 AND (c.position + 13 * c.color) % 52 = $1 AND c.player_id <> $2 AND p.status = 'IN_GAME'",
           [absoluteCoinPosition, playerId]
         );
         const hasCut = cut.rowCount !== 0;
@@ -517,7 +517,7 @@ const move_coin = async (req, res) => {
         if (!safePositions.has(coinPosition) && hasCut) {
           // set the cut coin positions to -1
           await client.query(
-            "UPDATE coin_state c SET position = -1 FROM player p WHERE c.player_id = p.id AND (c.position + 13 * c.color) % 52 = $1 AND c.player_id <> $2 AND p.status = 'IN_GAME'",
+            "UPDATE coin_state c SET position = -1 FROM player p WHERE c.player_id = p.id AND c.position <> -1 AND c.position <= 50 AND (c.position + 13 * c.color) % 52 = $1 AND c.player_id <> $2 AND p.status = 'IN_GAME'",
             [absoluteCoinPosition, playerId]
           );
         } else if (diceValue !== 6) {

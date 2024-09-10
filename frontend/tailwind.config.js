@@ -21,6 +21,10 @@ module.exports = {
     'bg-green-500',
     'bg-yellow-500',
     'bg-blue-500',
+    'text-red-500',
+    'text-green-500',
+    'text-yellow-500',
+    'text-blue-500',
   ],
   plugins: [],
 };
