@@ -2,6 +2,7 @@ import axios from "axios";
 import { useContext } from "react";
 import API_URL from "./Config";
 import { BoardStateContext } from "./Contexts";
+import NumberedDice from "./NumberedDice";
 
 const Dice = ({ gameId, playerId, color, visible }) => {
   const [
@@ -42,9 +43,7 @@ const Dice = ({ gameId, playerId, color, visible }) => {
         className="w-20 h-20 bg-white border border-gray-500 rounded-lg flex items-center justify-center select-none"
         onClick={handleClickDice}
       >
-        <p className="font-Poppins text-2xl">
-          {diceMap[color] !== 0 ? diceMap[color] : "ROLL"}
-        </p>
+        <NumberedDice number={diceMap[color]} />
       </div>
     );
   else {
