@@ -22,6 +22,8 @@ const Coin = ({ id, color, gameId, scale }) => {
   };
 
   const handleClickCoin = () => {
+    const user = JSON.parse(localStorage.getItem("user"));
+
     const url = `${API_URL}/games/move-coin`;
     axios
       .post(
@@ -32,6 +34,7 @@ const Coin = ({ id, color, gameId, scale }) => {
             "Content-Type": "application/json",
             coin_id: id,
             game_id: gameId,
+            Authorization: `Bearer ${user.token}`,
           },
         }
       )

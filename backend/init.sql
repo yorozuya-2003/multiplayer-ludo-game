@@ -2,7 +2,8 @@ CREATE SCHEMA ludo;
 
     CREATE TABLE ludo.user (
         id BIGSERIAL PRIMARY KEY NOT NULL,
-        name VARCHAR(50) NOT NULL,
+        username VARCHAR(50) UNIQUE,
+        password VARCHAR(100) NOT NULL,
         created_on BIGINT NOT NULL
     );
 

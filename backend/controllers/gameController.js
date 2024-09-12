@@ -11,7 +11,7 @@ const create_game = async (req, res) => {
   const client = await pool.connect();
 
   try {
-    const userId = req.headers.user_id;
+    const userId = req.user_id;
 
     await client.query("BEGIN");
 
@@ -130,6 +130,20 @@ const get_game_state = async (req, res) => {
     await client.query("BEGIN");
     const gameId = req.headers.game_id;
 
+    // checking if user-id belongs to game
+    const player = await client.query(
+      "SELECT id FROM player WHERE user_id=$1 AND game_id=$2",
+      [req.user_id, gameId]
+    );
+    if (player.rowCount === 0) {
+      await client.query("ROLLBACK");
+      const error = "user is not a player of the requested game-id.";
+      console.error(error);
+      res.status(400).json({ error: error });
+      return;
+    }
+    const playerId = player.rows[0].id;
+
     // checking if game has not started
     const gameStatus = await client.query(
       "SELECT status FROM game WHERE id = $1 LIMIT 1",
@@ -160,6 +174,12 @@ const get_game_state = async (req, res) => {
     );
     const gameHasEnded = parseInt(finishPlayerCount.rows[0].count) >= 3;
 
+    // getting player usernames
+    const playerNames = await client.query(
+      "SELECT p.id as player_id, u.username as username FROM player p JOIN ludo.user u ON p.user_id=u.id WHERE p.game_id=$1 LIMIT 4;",
+      [gameId]
+    );
+
     // if game has finished
     if (gameHasEnded) {
       // dropping game from player-turn table
@@ -177,11 +197,14 @@ const get_game_state = async (req, res) => {
         "UPDATE player SET status = 'FINISHED', finished_ts = $1 where game_id = $2 and status <> 'FINISHED'",
         [Date.now(), gameId]
       );
+
       await client.query("COMMIT");
       res.status(200).json({
         board_state: null,
         game_has_ended: gameHasEnded,
         player_turn_id: null,
+        player_id: playerId,
+        player_names: playerNames.rows,
       });
       return;
     }
@@ -214,6 +237,7 @@ const get_game_state = async (req, res) => {
       game_has_ended: gameHasEnded,
       player_turn_id: playerTurnId,
       dice_value: diceValue,
+      player_names: playerNames.rows,
     });
   } catch (error) {
     await client.query("ROLLBACK");
@@ -280,9 +304,14 @@ const roll_dice = async (req, res) => {
       return;
     }
 
-    // checking if player-id in request header matches player-id in player-turn
+    // checking if player-id from request header matches player-id in player-turn
     const playerId = playerTurn.rows[0].player_id;
-    const reqPlayerId = req.headers.player_id;
+    
+    let reqPlayerId = await client.query(
+      "SELECT * FROM player WHERE user_id = $1",
+      [req.user_id]
+    );
+    reqPlayerId = reqPlayerId.rows[0].id;
 
     if (playerId !== reqPlayerId) {
       await client.query("ROLLBACK");
@@ -405,6 +434,21 @@ const move_coin = async (req, res) => {
     const coinColor = coinData.rows[0].color;
     const playerId = coinData.rows[0].player_id;
 
+    let reqPlayerId = await client.query(
+      "SELECT * FROM player WHERE user_id = $1",
+      [req.user_id]
+    );
+    reqPlayerId = reqPlayerId.rows[0].id;
+
+    if (reqPlayerId !== playerId) {
+      await client.query("ROLLBACK");
+      const error =
+        "requested coin-id does not belong to the player who clicked the coin.";
+      console.error(error);
+      res.status(400).json({ error: error });
+      return;
+    }
+
     const playerTurn = await client.query(
       "SELECT dice, player_id from player_turn where game_id = $1",
       [gameId]
@@ -449,7 +493,7 @@ const move_coin = async (req, res) => {
     coinPosition = coinPosition.rows[0].position;
 
     if (
-      (coinPosition !== -1 && coinPosition + diceValue <= 56) |
+      (coinPosition !== -1 && coinPosition + diceValue <= 56) ||
       (coinPosition === -1 && diceValue === 6)
     ) {
       coinPosition = coinPosition === -1 ? 0 : coinPosition + diceValue;
