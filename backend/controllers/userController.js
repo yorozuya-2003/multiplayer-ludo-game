@@ -65,7 +65,7 @@ const sign_up = async (req, res) => {
       "INSERT INTO ludo.user (username, password, created_on) VALUES ($1, $2, $3) returning *",
       [reqUsername, hashedPassword, Date.now()]
     );
-    const token = generateToken({ id: user.rows[0] });
+    const token = generateToken({ id: user.rows[0].id });
 
     await client.query("COMMIT");
 
