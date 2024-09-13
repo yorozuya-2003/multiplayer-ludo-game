@@ -15,10 +15,9 @@ const Dice = ({ gameId, playerId, color, visible, playerName }) => {
     setDiceMap,
   ] = useContext(BoardStateContext);
 
-  const user = useAuthContext();
+  const { user } = useAuthContext();
 
   const handleClickDice = () => {
-    const user = JSON.parse(localStorage.getItem("user"));
     const url = `${API_URL}/games/roll-dice`;
     axios
       .get(url, {

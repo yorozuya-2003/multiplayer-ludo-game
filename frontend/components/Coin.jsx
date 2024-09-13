@@ -1,10 +1,13 @@
 import { coinColorMapping, handlePositionMapping } from "@/components/Utils";
+import useAuthContext from "@/hooks/useAuthContext";
 import axios from "axios";
 import { useContext } from "react";
 import API_URL from "./Config";
 import { BoardStateContext } from "./Contexts";
 
 const Coin = ({ id, color, gameId, scale }) => {
+  const { user } = useAuthContext();
+
   const [
     absolutePositions,
     setAbsolutePositions,
@@ -22,8 +25,6 @@ const Coin = ({ id, color, gameId, scale }) => {
   };
 
   const handleClickCoin = () => {
-    const user = JSON.parse(localStorage.getItem("user"));
-
     const url = `${API_URL}/games/move-coin`;
     axios
       .post(

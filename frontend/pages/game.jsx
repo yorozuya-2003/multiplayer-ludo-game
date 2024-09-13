@@ -1,5 +1,6 @@
 import Board from "@/components/Board";
 import API_URL from "@/components/Config";
+import useAuthContext from "@/hooks/useAuthContext";
 import { useSignOut } from "@/hooks/useSignOut";
 import axios from "axios";
 import { useRouter } from "next/navigation";
@@ -9,6 +10,8 @@ const Game = () => {
   const [gameId, setGameId] = useState(null);
   const [gameStarted, setGameStarted] = useState(false);
   const router = useRouter();
+
+  const { user } = useAuthContext();
 
   const { signOut } = useSignOut();
 
@@ -23,8 +26,6 @@ const Game = () => {
   }, []);
 
   const getGameId = () => {
-    const user = JSON.parse(localStorage.getItem("user"));
-
     if (!user) {
       router.push("/");
       return;
@@ -55,6 +56,7 @@ const Game = () => {
         if (error.response) {
           if (error.response.data.error === "TOKEN_EXPIRED") {
             signOut();
+            router.push("/sign-up");
           }
         }
       });

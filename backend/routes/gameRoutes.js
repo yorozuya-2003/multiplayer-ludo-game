@@ -1,6 +1,6 @@
 const express = require("express");
 const controller = require("../controllers/gameController");
-const requireAuth = require("../requireAuth");
+const requireAuth = require("../middleware/requireAuth");
 
 const router = express.Router();
 

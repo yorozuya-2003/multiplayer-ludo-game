@@ -12,9 +12,12 @@ import {
   negativePositionMapping,
 } from "./Utils";
 
+import useAuthContext from "@/hooks/useAuthContext";
 import API_URL from "./Config";
 
 const Board = ({ gameId }) => {
+  const { user } = useAuthContext();
+
   const [absolutePositions, setAbsolutePositions] = useState(
     absolutePositionMapping
   );
@@ -41,7 +44,6 @@ const Board = ({ gameId }) => {
   }, []);
 
   const getBoardState = () => {
-    const user = JSON.parse(localStorage.getItem("user"));
     const url = `${API_URL}/games/state`;
 
     axios
@@ -53,14 +55,6 @@ const Board = ({ gameId }) => {
         },
       })
       .then((response) => {
-        const [absolutePositionMapping, negativePositionMapping] =
-          handlePositionMapping(response.data.board_state);
-        setAbsolutePositions(absolutePositionMapping);
-        setNegativePositions(negativePositionMapping);
-
-        setPlayerTurnId(response.data.player_turn_id);
-        setUserPlayerId(response.data.player_id);
-
         const [colorToPlayerIdMapping, playerIdToColorMapping] =
           handlePlayerMapping(response.data.board_state);
         setColorToPlayerIdMap(colorToPlayerIdMapping);
@@ -68,9 +62,18 @@ const Board = ({ gameId }) => {
 
         const playerNameMapping = handlePlayerNameMapping(
           response.data.player_names,
-          playerIdToColorMap
+          playerIdToColorMapping
         );
         setPlayerNameMap(playerNameMapping);
+
+        const [absolutePositionMapping, negativePositionMapping] =
+          handlePositionMapping(response.data.board_state);
+        setAbsolutePositions(absolutePositionMapping);
+        setNegativePositions(negativePositionMapping);
+
+        setPlayerTurnId(response.data.player_turn_id);
+
+        setUserPlayerId(response.data.player_id);
 
         const resDiceValue = parseInt(response.data.dice_value);
         setDiceMap({
@@ -682,6 +685,11 @@ const Board = ({ gameId }) => {
           </div>
         </div>
       </BoardStateContext.Provider>
+      {user && (
+        <p className="font-Poppins text-center text-normal text-gray-500 mt-10">
+          (You are signed in as {user.username})
+        </p>
+      )}
     </div>
   );
 };

@@ -42,6 +42,9 @@ const Home = () => {
       >
         SIGN OUT
       </button>
+      <p className="text-normal text-gray-500 mt-5">
+        (You are signed in as {user.username})
+      </p>
     </div>
   );
 };

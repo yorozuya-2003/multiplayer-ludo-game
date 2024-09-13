@@ -17,7 +17,7 @@ const validateToken = async (req, res, next) => {
   try {
     const user = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-    req.user_id = user["id"]["id"];
+    req.user_id = user["id"];
     next();
   } catch (error) {
     console.log(error);
