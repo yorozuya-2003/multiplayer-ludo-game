@@ -30,7 +30,7 @@ const create_game = async (req, res) => {
 
     // checking if user already a part of an in-progress game
     const existingGame = await client.query(
-      "SELECT g.id as game_id FROM player p JOIN game g on g.id = p.game_id WHERE p.user_id = $1 AND g.status = 'IN_PROGRESS' LIMIT 1",
+      "SELECT g.id as game_id FROM player p JOIN game g on g.id = p.game_id WHERE p.user_id = $1 AND g.status <> 'FINISHED' LIMIT 1",
       [userId]
     );
     if (existingGame.rowCount === 1) {
@@ -81,28 +81,32 @@ const create_game = async (req, res) => {
     );
     countPlayers = parseInt(countPlayers.rows[0].count);
 
-    // populating coin state
-    if (1 <= countPlayers <= 4) {
-      const playerColor = colors[countPlayers - 1];
-
-      for (let ctr = 0; ctr < 4; ctr++) {
-        await client.query(
-          "INSERT INTO coin_state (color, player_id, position) VALUES ($1, $2, $3)",
-          [playerColor, playerId, -1]
-        );
-      }
-    }
-
-    // populate player turn (assigning first turn to game creator)
-    if (countPlayers === 1) {
-      await client.query(
-        "INSERT INTO player_turn (game_id, player_id) VALUES ($1, $2)",
-        [gameId, playerId]
-      );
-    }
-
     // four players have joined; update game status
     if (countPlayers === 4) {
+      let players = await client.query(
+        "SELECT id FROM player WHERE game_id = $1 LIMIT 4",
+        [gameId]
+      );
+      players = players.rows;
+
+      // populating coin state
+      for (let color = 0; color < 4; color++) {
+        const playerColor = colors[color];
+
+        for (let ctr = 0; ctr < 4; ctr++) {
+          await client.query(
+            "INSERT INTO coin_state (color, player_id, position) VALUES ($1, $2, $3)",
+            [playerColor, players[color].id, -1]
+          );
+        }
+      }
+
+      // populating player turn
+      await client.query(
+        "INSERT INTO player_turn (game_id, player_id) VALUES ($1, $2)",
+        [gameId, players[0].id]
+      );
+
       await client.query("UPDATE game SET status='IN_PROGRESS' WHERE id = $1", [
         gameId,
       ]);
