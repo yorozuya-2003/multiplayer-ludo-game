@@ -13,10 +13,12 @@ import {
 } from "./Utils";
 
 import useAuthContext from "@/hooks/useAuthContext";
+import { useRouter } from "next/router";
 import API_URL from "./Config";
 
 const Board = ({ gameId }) => {
   const { user } = useAuthContext();
+  const router = useRouter();
 
   const [absolutePositions, setAbsolutePositions] = useState(
     absolutePositionMapping
@@ -33,11 +35,14 @@ const Board = ({ gameId }) => {
 
   const [diceMap, setDiceMap] = useState({ 0: 0, 1: 0, 2: 0, 3: 0 });
 
+  const [colorToRankingMap, setColorToRankingMap] = useState({});
+
   const POLLING_INTERVAL = 2000;
 
   useEffect(() => {
     const intervalId = setInterval(() => {
       getBoardState();
+      getGameRankings();
     }, POLLING_INTERVAL);
 
     return () => clearInterval(intervalId);
@@ -55,6 +60,12 @@ const Board = ({ gameId }) => {
         },
       })
       .then((response) => {
+        if (response.data.game_has_ended) {
+          setTimeout(() => {
+            router.push("/");
+          }, 5000);
+        }
+
         const [colorToPlayerIdMapping, playerIdToColorMapping] =
           handlePlayerMapping(response.data.board_state);
         setColorToPlayerIdMap(colorToPlayerIdMapping);
@@ -88,6 +99,25 @@ const Board = ({ gameId }) => {
       });
   };
 
+  const getGameRankings = () => {
+    const url = `${API_URL}/games/rankings`;
+    axios
+      .get(url, {
+        headers: {
+          "Content-Type": "application/json",
+          game_id: gameId,
+          // Authorization: `Bearer ${user.token}`,
+        },
+      })
+      .then((response) => {
+        const playerRankings = handlePlayerRankings(response.data.rankings);
+        setColorToRankingMap(playerRankings);
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  };
+
   const handlePlayerMapping = (coinStateData) => {
     const colorToPlayerIdMapping = {};
     const playerIdToColorMapping = {};
@@ -102,6 +132,14 @@ const Board = ({ gameId }) => {
     const mapping = {};
     playerNames.forEach((player) => {
       mapping[playerIdToColorMapping[player.player_id]] = player.username;
+    });
+    return mapping;
+  };
+
+  const handlePlayerRankings = (rankingList) => {
+    const mapping = {};
+    rankingList.forEach((element, index) => {
+      mapping[element.color] = index + 1;
     });
     return mapping;
   };
@@ -126,6 +164,7 @@ const Board = ({ gameId }) => {
               playerId={colorToPlayerIdMap[1]}
               visible={colorToPlayerIdMap[1] === playerTurnId}
               playerName={playerNameMap[1]}
+              rank={colorToRankingMap[1]}
             />
             <Dice
               gameId={gameId}
@@ -133,6 +172,7 @@ const Board = ({ gameId }) => {
               playerId={colorToPlayerIdMap[0]}
               visible={colorToPlayerIdMap[0] === playerTurnId}
               playerName={playerNameMap[0]}
+              rank={colorToRankingMap[0]}
             />
           </div>
           <div>
@@ -674,6 +714,7 @@ const Board = ({ gameId }) => {
               playerId={colorToPlayerIdMap[2]}
               visible={colorToPlayerIdMap[2] === playerTurnId}
               playerName={playerNameMap[2]}
+              rank={colorToRankingMap[2]}
             />
             <Dice
               gameId={gameId}
@@ -681,6 +722,7 @@ const Board = ({ gameId }) => {
               playerId={colorToPlayerIdMap[3]}
               visible={colorToPlayerIdMap[3] === playerTurnId}
               playerName={playerNameMap[3]}
+              rank={colorToRankingMap[3]}
             />
           </div>
         </div>

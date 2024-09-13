@@ -5,7 +5,7 @@ import API_URL from "./Config";
 import { BoardStateContext } from "./Contexts";
 import NumberedDice from "./NumberedDice";
 
-const Dice = ({ gameId, playerId, color, visible, playerName }) => {
+const Dice = ({ gameId, playerId, color, visible, playerName, rank }) => {
   const [
     absolutePositions,
     setAbsolutePositions,
@@ -50,14 +50,16 @@ const Dice = ({ gameId, playerId, color, visible, playerName }) => {
         >
           <NumberedDice number={diceMap[color]} color={color} />
         </div>
-        <p className="font-Poppins">{playerName}</p>
+        <p className="font-Poppins font-semibold">{playerName}</p>
+        {rank && <p className="font-Poppins italic">(Rank {rank})</p>}
       </div>
     );
   else {
     return (
       <div>
         <div className="w-20 h-20 bg-white border border-gray-500 rounded-lg flex items-center justify-center invisible select-none"></div>
-        <p className="font-Poppins">{playerName}</p>
+        <p className="font-Poppins font-semibold">{playerName}</p>
+        {rank && <p className="font-Poppins text-gray-600">(Rank {rank})</p>}
       </div>
     );
   }

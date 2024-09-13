@@ -30,7 +30,7 @@ const create_game = async (req, res) => {
 
     // checking if user already a part of an in-progress game
     const existingGame = await client.query(
-      "SELECT game_id FROM player WHERE user_id = $1 AND status = 'IN_GAME' LIMIT 1",
+      "SELECT g.id as game_id FROM player p JOIN game g on g.id = p.game_id WHERE p.user_id = $1 AND g.status = 'IN_PROGRESS' LIMIT 1",
       [userId]
     );
     if (existingGame.rowCount === 1) {
@@ -306,9 +306,9 @@ const roll_dice = async (req, res) => {
 
     // checking if player-id from request header matches player-id in player-turn
     const playerId = playerTurn.rows[0].player_id;
-    
+
     let reqPlayerId = await client.query(
-      "SELECT * FROM player WHERE user_id = $1",
+      "SELECT id FROM player WHERE user_id = $1 AND status='IN_GAME'",
       [req.user_id]
     );
     reqPlayerId = reqPlayerId.rows[0].id;
@@ -435,7 +435,7 @@ const move_coin = async (req, res) => {
     const playerId = coinData.rows[0].player_id;
 
     let reqPlayerId = await client.query(
-      "SELECT * FROM player WHERE user_id = $1",
+      "SELECT id FROM player WHERE user_id = $1 AND status='IN_GAME'",
       [req.user_id]
     );
     reqPlayerId = reqPlayerId.rows[0].id;
@@ -625,17 +625,12 @@ const get_game_rankings = async (req, res) => {
       return;
     }
 
-    if (gameStatus.rows[0].status === "FINISHED") {
-      const rankings = await client.query(
-        "SELECT id FROM player where game_id = $1 ORDER BY finished_ts LIMIT 4",
-        [gameId]
-      );
-      res.status(200).json({ rankings: rankings.rows });
-      return;
-    }
-
+    const rankings = await client.query(
+      "SELECT p.id, c.color FROM player p JOIN (SELECT DISTINCT player_id, color FROM coin_state) c ON p.id=c.player_id WHERE p.game_id = $1 and p.status='FINISHED' ORDER BY p.finished_ts LIMIT 4",
+      [gameId]
+    );
     await client.query("COMMIT");
-    res.status(200).json({ rankings: null });
+    res.status(200).json({ rankings: rankings.rows });
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("Error in generating the game rankings: ", error);

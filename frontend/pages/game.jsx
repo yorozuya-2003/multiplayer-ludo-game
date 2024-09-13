@@ -12,7 +12,6 @@ const Game = () => {
   const router = useRouter();
 
   const { user } = useAuthContext();
-
   const { signOut } = useSignOut();
 
   const POLLING_INTERVAL = 5000;
@@ -33,7 +32,7 @@ const Game = () => {
 
     const url = `${API_URL}/games`;
 
-    // joining (dummy) ongoing game
+    // joining ongoing game
     axios
       .post(
         url,
@@ -56,7 +55,7 @@ const Game = () => {
         if (error.response) {
           if (error.response.data.error === "TOKEN_EXPIRED") {
             signOut();
-            router.push("/sign-up");
+            router.push("/sign-in");
           }
         }
       });
