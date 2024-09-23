@@ -30,6 +30,15 @@ Make sure you have the following installed on your machine:
         cd backend
         ```
 
+    - Create a `.env` file in the `backend` directory with the following content (change environment-variable values according to requirements):
+        ```plaintext
+        POSTGRES_DB=girman
+        POSTGRES_USER=postgres
+        POSTGRES_PASSWORD=password
+
+        JWT_SECRET_KEY=girmantech
+        ```
+
     - Start the PostgreSQL docker container:
         ```sh
         docker compose up -d
