@@ -5,10 +5,12 @@ dotenv.config();
 const Pool = require("pg").Pool;
 
 // database configuration
-const connectionString = process.env.POSTGRES_URL;
+const postgresUrl = process.env.POSTGRES_URL;
+const connectionString = `${postgresUrl}`;
 
 const pool = new Pool({
-  connectionString
+  connectionString,
+  keepAlive: true,
 });
 
 module.exports = pool;
